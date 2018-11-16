@@ -1,7 +1,9 @@
 MultiAsyncHelper Class:  'support/multi_async_helper.php'
 =========================================================
 
-Asynchronous, or non-blocking, sockets allow for a lot of powerful functionality such as scraping multiple pages and sites simultaneously from a single script.  However, management of the entire process can result in a lot of extra code.  This class manages the nitty-gritty details of queueing up and simultaneously retrieving content from multiple URLs.  It is a powerful class, though, which means it can be used for other I/O related things besides sockets (e.g. files).
+Asynchronous, or non-blocking, sockets allow for a lot of powerful functionality such as scraping multiple pages and sites simultaneously from a single script.  They also allow for using certain features of HTTP such as sending a second request to a server on an active connection while the previous request's response is still arriving.
+
+However, management of the entire process can result in a lot of extra code.  This class manages the nitty-gritty details of queueing up and simultaneously retrieving content from multiple URLs.  It is a powerful class, though, which means it can be used for other I/O related things besides sockets (e.g. files).
 
 Using MultiAsyncHelper for bulk web scraping tasks is NOT recommended.  Running concurrent requests to the same destination network has a much higher likelihood of getting noticed by a system administrator and result in an IP address block.
 
