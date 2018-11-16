@@ -3,23 +3,38 @@ By default, the Ultimate Web Scraper Toolkit verifies SSL certificate chains usi
 
 Where data security is of concern, keep in mind that SSL is hard to get right and best-practices change over time as evidenced by the previous paragraph.
 
-Example:
+Example custom SSL options usage:
+
 ```php
 <?php
 	require_once "support/http.php";
 	require_once "support/web_browser.php";
 
-	// Generate default SSL options using the "modern" ciphers.
+	// Generate default safe SSL/TLS options using the "modern" ciphers.
+	// See:  https://mozilla.github.io/server-side-tls/ssl-config-generator/
 	$sslopts = HTTP::GetSafeSSLOpts(true, "modern");
 
-	// See php.net for a complete list of all options.
+	// Adjust the options as necessary.
+	// For a complete list of options, see:  http://php.net/manual/en/context.ssl.php
 	$sslopts["capture_peer_cert"] = true;
+
+	// Demonstrates capturing the SSL certificate.
+	// Returning false terminates the connection without sending any data.
+	function CertCheckCallback($type, $cert, $opts)
+	{
+		var_dump($type);
+		var_dump($cert);
+
+		return true;
+	}
 
 	// Send a POST request to a URL.
 	$url = "https://api.somesite.com/profile";
 	$web = new WebBrowser();
 	$options = array(
 		"sslopts" => $sslopts,
+		"peer_cert_callback" => "CertCheckCallback",
+		"peer_cert_callback_opts" => false,
 		"postvars" => array(
 			"id" => 12345,
 			"firstname" => "John",
@@ -29,12 +44,19 @@ Example:
 	$result = $web->Process($url, $options);
 
 	// Check for connectivity and response errors.
-	if (!$result["success"])  echo "Error retrieving URL.  " . $result["error"] . "\n";
-	else if ($result["response"]["code"] != 200)  echo "Error retrieving URL.  Server returned:  " . $result["response"]["code"] . " " . $result["response"]["meaning"] . "\n";
-	else
+	if (!$result["success"])
 	{
-		// Do something with the response.
+		echo "Error retrieving URL.  " . $result["error"] . "\n";
+		exit();
 	}
+
+	if ($result["response"]["code"] != 200)
+	{
+		echo "Error retrieving URL.  Server returned:  " . $result["response"]["code"] . " " . $result["response"]["meaning"] . "\n";
+		exit();
+	}
+
+	// Do something with the response.
 ?>
 ```
 
