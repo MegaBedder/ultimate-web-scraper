@@ -68,6 +68,82 @@ Example usage:
 ?>
 ```
 
+Example advanced usage:
+```php
+<?php
+	require_once "support/web_browser.php";
+	require_once "support/multi_async_helper.php";
+
+	// The URLs we want to load.
+	$urls = array(
+		"http://www.barebonescms.com/",
+		"http://www.cubiclesoft.com/",
+		"http://www.barebonescms.com/documentation/ultimate_web_scraper_toolkit/",
+	);
+
+	// Build the queue.
+	$helper = new MultiAsyncHelper();
+	$helper->SetConcurrencyLimit(3);
+
+	// Mix in a regular file handle just for fun.
+	$fp = fopen(__FILE__, "rb");
+	stream_set_blocking($fp, 0);
+	$helper->Set("__fp", $fp, "MultiAsyncHelper::ReadOnly");
+
+	// Add the URLs to the async helper.
+	$pages = array();
+	foreach ($urls as $url)
+	{
+		$pages[$url] = new WebBrowser();
+		$pages[$url]->ProcessAsync($helper, $url, NULL, $url);
+	}
+
+	// Run the main loop.
+	$result = $helper->Wait();
+	while ($result["success"])
+	{
+		// Process the file handle if it is ready for reading.
+		if (isset($result["read"]["__fp"]))
+		{
+			$fp = $result["read"]["__fp"];
+			$data = fread($fp, 500);
+			if ($data === false || feof($fp))
+			{
+				echo "End of file reached.\n";
+
+				$helper->Remove("__fp");
+			}
+		}
+
+		// Process everything else.
+		foreach ($result["removed"] as $key => $info)
+		{
+			if ($key === "__fp")  continue;
+
+			if (!$info["result"]["success"])  echo "Error retrieving URL (" . $key . ").  " . $info["result"]["error"] . "\n";
+			else if ($info["result"]["response"]["code"] != 200)  echo "Error retrieving URL (" . $key . ").  Server returned:  " . $info["result"]["response"]["line"] . "\n";
+			else
+			{
+				echo "A response was returned (" . $key . ").\n";
+
+				// Do something with the data here...
+			}
+
+			unset($pages[$key]);
+		}
+
+		// Break out of the loop when nothing is left.
+		if ($result["numleft"] < 1)  break;
+
+		$result = $helper->Wait();
+	}
+
+	// An error occurred.
+	if (!$result["success"])  var_dump($result);
+?>
+```
+This is a fairly complete example that retrieves three different URLs while simultaneously reading a file, processes up to three items in the queue at a time (see SetConcurrencyLimit()), and handles the various responses appropriately.
+
 MultiAsyncHelper::SetConcurrencyLimit($limit)
 ---------------------------------------------
 
